@@ -123,7 +123,7 @@ class DiscreteDistribution(dict):
             cumulative = array[i + 1]
             array2[i] = key
             i += 1
-        print "@@@array ", array
+        # print "@@@array ", array
 
         for j in range(length):
             if (ranNum >= array[j] and ranNum < array[j + 1]):
@@ -389,11 +389,11 @@ class ParticleFilter(InferenceModule):
         if self.numParticles % numPos != 0:
             for i in range(self.numParticles % numPos):
                 self.particles.append(self.legalPositions[i])
-        print "@@@@self.legalPositions[0] ", self.legalPositions[0]
-        print "@@@@self.particles ", self.particles
-        print "@@@@partsPerPos ", partsPerPos
-        print "@@@@self.numParticles ", self.numParticles
-        print "@@@@numPos ", len(self.legalPositions)
+        # print "@@@@self.legalPositions[0] ", self.legalPositions[0]
+        # print "@@@@self.particles ", self.particles
+        # print "@@@@partsPerPos ", partsPerPos
+        # print "@@@@self.numParticles ", self.numParticles
+        # print "@@@@numPos ", len(self.legalPositions)
 
     def observeUpdate(self, observation, gameState):
         """
@@ -409,6 +409,39 @@ class ParticleFilter(InferenceModule):
         """
         "*** YOUR CODE HERE ***"
         # raise NotImplementedError
+        """getObservationProb(self, noisyDistance, pacmanPosition, ghostPosition, jailPosition):"""
+        # print "@@@gameState "
+        # print gameState
+        dist = self.getBeliefDistribution()
+        disDist = DiscreteDistribution()
+        for particle in self.particles:
+            observProb = self.getObservationProb(observation, gameState.getPacmanPosition(), particle, self.getJailPosition())
+            # print 
+            # "@@@@observProb ", observProb
+            # weight = dist[particle]
+            # weight = weight * observProb
+            if particle in disDist:
+                disWeight = disDist[particle]
+                disWeight = disWeight + observProb
+                disDist[particle] = disWeight
+            else:
+                disDist[particle] = observProb
+            # dist[particle] = weight
+        disDist.normalize()
+        # print "@@@@disDist ", disDist
+        if disDist.total() > 0:
+            self.particles = [disDist.sample() for _ in range(self.numParticles)]
+        else: 
+            print "@@@@initalize empty"
+            self.initializeUniformly(gameState)
+        # return disDist
+        # particles = [0] * self.numParticles
+        # for i in range(self.numParticles):
+        #     sample = self.sample()
+        #     particles.append(sample)
+        # print "getObservationProb ", self.getObservationProb(observation, gameState.getPacmanPosition(), ghostPos, self.getJailPosition())
+
+
 
     def elapseTime(self, gameState):
         """
@@ -416,6 +449,21 @@ class ParticleFilter(InferenceModule):
         gameState.
         """
         "*** YOUR CODE HERE ***"
+        newParts = []
+        
+
+        # print "@@@@self.particles ", self.particles
+        for particle in self.particles:
+            finalPartDistr = self.getPositionDistribution(gameState, particle)
+            # print "@@@@finalPosDistr ", finalPosDistr
+            sample = finalPartDistr.sample()
+            newParts.append(sample)
+        # print "@@@type newParts ", type(newParts)
+        # print "@@@type self.particles ", type(self.particles)
+        self.particles = newParts
+
+
+
 
     def getBeliefDistribution(self):
         """
@@ -463,6 +511,19 @@ class JointParticleFilter(ParticleFilter):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
+        # number of positions
+        numPos = len(self.legalPositions)
+        # particles per position
+        partsPerPos = self.numParticles // numPos
+        for position in self.legalPositions:
+            for i in range(partsPerPos):
+                self.particles.append(position)
+        if self.numParticles % numPos != 0:
+            for i in range(self.numParticles % numPos):
+                self.particles.append(self.legalPositions[i])
+
+
+
 
     def addGhostAgent(self, agent):
         """
